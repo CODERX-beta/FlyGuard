@@ -15,7 +15,7 @@
 | :--- | :--- | :--- |
 | **1. Clear Problem Statement** | [`docs/PROBLEM_STATEMENT.md`](docs/PROBLEM_STATEMENT.md) & [Section 1 below](#1-problem-statement--who-has-the-problem--why-it-matters) | Explains who suffers from money-mule laundering & false positives, and why it matters. |
 | **2. Public Code Repository** | Root Repository (`/Fluguard.ai`) | Complete full-stack source code, ML pipeline, automated tests, and Docker configs. |
-| **3. Pitch Deck (PDF & PPTX)** | [`deliverables/FlyGuard_AI_Pitch_Deck.pdf`](deliverables/FlyGuard_AI_Pitch_Deck.pdf) · [`deliverables/FlyGuard_AI_Pitch_Deck.pptx`](deliverables/FlyGuard_AI_Pitch_Deck.pptx) · [`docs/PITCH_DECK.md`](docs/PITCH_DECK.md) | 10-slide executive presentation deck in both PDF and PowerPoint (`.pptx`) formats. |
+| **3. Pitch Deck (PDF & PPTX)** | [`deliverables/FlyGuard_AI_Pitch_Deck.pdf`](deliverables/FlyGuard_AI_Pitch_Deck.pdf) · [`deliverables/FlyGuard_AI_Pitch_Deck.pptx`](deliverables/FlyGuard_AI_Pitch_Deck.pptx)  10-slide executive presentation deck in both PDF and PowerPoint (`.pptx`) formats. |
 | **4. Short Demo Video (< 3 min)** | [`deliverables/FlyGuard_AI_Demo_Video.mp4`](FlyGuard_Demo_Video.mp4) | Walkthrough video (< 3 minutes) |
 | **5. Clean README (Overview, Setup, Usage)** | [`README.md`](README.md) (this document) | Complete architecture overview, setup instructions, and IFTTT operational guide. |
 | **6. Deployment & Run Guide** | [`DEPLOYMENT_AND_RUN_GUIDE.md`](DEPLOYMENT_AND_RUN_GUIDE.md) | Local, Docker Compose, and production cloud deployment instructions. |
