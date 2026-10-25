@@ -1,0 +1,589 @@
+{
+  "model_version": "v1.0.0-xgb",
+  "created_at": "2026-10-25T09:33:00.926344",
+  "dataset_id": "syn-seed42-20k",
+  "random_seed": 42,
+  "passed_evaluation": true,
+  "feature_schema": [
+    {
+      "name": "incoming_tx_count",
+      "display_name": "Incoming Transaction Count",
+      "dtype": "float64",
+      "category": "velocity",
+      "description": "Total number of historical incoming transfers received up to the analysis cutoff.",
+      "limitations": "High for legitimate merchants and payment collectors as well as fan-in mules."
+    },
+    {
+      "name": "outgoing_tx_count",
+      "display_name": "Outgoing Transaction Count",
+      "dtype": "float64",
+      "category": "velocity",
+      "description": "Total number of historical outgoing transfers sent up to the analysis cutoff.",
+      "limitations": "Payroll accounts and splitter mules both exhibit elevated outgoing counts."
+    },
+    {
+      "name": "incoming_volume",
+      "display_name": "Incoming Volume (USD)",
+      "dtype": "float64",
+      "category": "volume",
+      "description": "Aggregate monetary value of incoming transfers before the cutoff timestamp.",
+      "limitations": "Must be contextualized against declared turnover and account segment."
+    },
+    {
+      "name": "outgoing_volume",
+      "display_name": "Outgoing Volume (USD)",
+      "dtype": "float64",
+      "category": "volume",
+      "description": "Aggregate monetary value of outgoing transfers before the cutoff timestamp.",
+      "limitations": "High volume alone does not imply illicit activity."
+    },
+    {
+      "name": "avg_incoming_amount",
+      "display_name": "Average Incoming Amount",
+      "dtype": "float64",
+      "category": "volume",
+      "description": "Mean monetary value per incoming transfer.",
+      "limitations": "Sensitive to single large legitimate deposits such as property or bonus payments."
+    },
+    {
+      "name": "avg_outgoing_amount",
+      "display_name": "Average Outgoing Amount",
+      "dtype": "float64",
+      "category": "volume",
+      "description": "Mean monetary value per outgoing transfer.",
+      "limitations": "May appear moderate when large sums are split across many smaller transfers."
+    },
+    {
+      "name": "tx_amount_std",
+      "display_name": "Transaction Amount Std Dev",
+      "dtype": "float64",
+      "category": "variability",
+      "description": "Standard deviation of transaction amounts across all account activity.",
+      "limitations": "Zero or low for accounts with very few transactions."
+    },
+    {
+      "name": "tx_amount_cv",
+      "display_name": "Transaction Amount Variability (CV)",
+      "dtype": "float64",
+      "category": "variability",
+      "description": "Coefficient of variation (std / mean) measuring uniformity vs dispersion of transfer sizes.",
+      "limitations": "Fixed-amount structuring rings may show artificially low variability."
+    },
+    {
+      "name": "unique_counterparties",
+      "display_name": "Distinct Counterparties",
+      "dtype": "float64",
+      "category": "network",
+      "description": "Total distinct sender and receiver accounts interacting with this account.",
+      "limitations": "Retail businesses naturally transact with many distinct customers."
+    },
+    {
+      "name": "in_out_count_ratio",
+      "display_name": "Incoming-to-Outgoing Count Ratio",
+      "dtype": "float64",
+      "category": "passthrough",
+      "description": "Ratio of incoming transaction count to outgoing transaction count.",
+      "limitations": "High values occur in both funnel mules and merchant collection accounts."
+    },
+    {
+      "name": "out_in_volume_ratio",
+      "display_name": "Outgoing-to-Incoming Value Ratio",
+      "dtype": "float64",
+      "category": "passthrough",
+      "description": "Ratio of total outgoing volume to total incoming volume.",
+      "limitations": "Values near 0.90-1.02 indicate near-complete pass-through when paired with short holding times."
+    },
+    {
+      "name": "passthrough_symmetry_score",
+      "display_name": "Pass-Through Volume Symmetry",
+      "dtype": "float64",
+      "category": "passthrough",
+      "description": "Closeness of incoming and outgoing volume to 1:1 parity (1 - |in - out| / max(in, out)).",
+      "limitations": "Requires holding-time context to distinguish from zero-balance sweep accounts."
+    },
+    {
+      "name": "turnover_to_declared_ratio",
+      "display_name": "Observed vs Declared Monthly Turnover",
+      "dtype": "float64",
+      "category": "baseline",
+      "description": "Ratio of observed monthly transaction turnover to KYC declared monthly turnover.",
+      "limitations": "Depends on accuracy of self-declared KYC onboarding figures."
+    },
+    {
+      "name": "burst_ratio_7d_vs_90d",
+      "display_name": "7-Day Activity Burst Ratio",
+      "dtype": "float64",
+      "category": "temporal",
+      "description": "Share of 90-day transaction volume concentrated in the most recent 7 days.",
+      "limitations": "Can be elevated by legitimate seasonal or one-time personal events."
+    },
+    {
+      "name": "recent_vs_baseline_volume_ratio",
+      "display_name": "Recent vs Historical Baseline Ratio",
+      "dtype": "float64",
+      "category": "baseline",
+      "description": "Ratio of recent 14-day daily volume rate to prior historical daily volume rate.",
+      "limitations": "Newly opened accounts have shorter historical baselines."
+    },
+    {
+      "name": "median_holding_time_hours",
+      "display_name": "Approx. Holding Time (Hours)",
+      "dtype": "float64",
+      "category": "temporal",
+      "description": "Estimated median elapsed hours between receiving funds and sending onward transfers.",
+      "limitations": "Approximated from timestamp deltas between sequential inflows and outflows."
+    },
+    {
+      "name": "rapid_passthrough_ratio",
+      "display_name": "Rapid Forwarding Ratio (<3h)",
+      "dtype": "float64",
+      "category": "temporal",
+      "description": "Proportion of outgoing transfers executed within 3 hours of a preceding incoming transfer.",
+      "limitations": "Active day-traders or instant wallet users may occasionally trigger rapid transfers."
+    },
+    {
+      "name": "account_age_days",
+      "display_name": "Account Age (Days)",
+      "dtype": "float64",
+      "category": "profile",
+      "description": "Age of the account in days at the analysis cutoff timestamp.",
+      "limitations": "Compromised or dormant-takeover mule accounts may be several years old."
+    },
+    {
+      "name": "dormancy_gap_days",
+      "display_name": "Max Inactivity Gap (Days)",
+      "dtype": "float64",
+      "category": "temporal",
+      "description": "Longest period of inactivity before renewed transaction activity.",
+      "limitations": "Seasonal accounts naturally have long inactivity gaps."
+    },
+    {
+      "name": "dormancy_burst_indicator",
+      "display_name": "Dormancy-to-Burst Score",
+      "dtype": "float64",
+      "category": "temporal",
+      "description": "Composite indicator of prolonged dormancy followed by high-velocity recent turnover.",
+      "limitations": "Should be reviewed alongside account holder contact/device changes."
+    },
+    {
+      "name": "in_degree",
+      "display_name": "Network In-Degree (Unique Senders)",
+      "dtype": "float64",
+      "category": "graph",
+      "description": "Number of distinct accounts sending funds directly to this account.",
+      "limitations": "Captures 1-hop incoming connectivity only."
+    },
+    {
+      "name": "out_degree",
+      "display_name": "Network Out-Degree (Onward Destinations)",
+      "dtype": "float64",
+      "category": "graph",
+      "description": "Number of distinct destination accounts receiving funds from this account.",
+      "limitations": "Captures 1-hop outgoing connectivity only."
+    },
+    {
+      "name": "pagerank_score",
+      "display_name": "Network PageRank Centrality (x1000)",
+      "dtype": "float64",
+      "category": "graph",
+      "description": "Volume-weighted directed PageRank centrality scaled by 1,000.",
+      "limitations": "Depends on the scope of transactions available in the monitored institution."
+    },
+    {
+      "name": "clustering_coefficient",
+      "display_name": "Local Clustering Coefficient",
+      "dtype": "float64",
+      "category": "graph",
+      "description": "Fraction of connected triangles among an account's immediate neighborhood.",
+      "limitations": "Shared household circles and circular mule rings both increase local clustering."
+    },
+    {
+      "name": "cycle_participation_score",
+      "display_name": "Circular Flow / Reciprocity Score",
+      "dtype": "float64",
+      "category": "graph",
+      "description": "Indicator of participation in 2-hop bidirectional or short directed cycles (up to length 5).",
+      "limitations": "Friends splitting bills back and forth can create 2-hop reciprocity."
+    },
+    {
+      "name": "high_risk_channel_ratio",
+      "display_name": "High-Velocity Channel Share",
+      "dtype": "float64",
+      "category": "behavioral",
+      "description": "Proportion of transfers using instant P2P, crypto ramps, or cross-border wires.",
+      "limitations": "Modern digital banking users frequently prefer instant payment rails."
+    }
+  ],
+  "metrics": {
+    "evaluation_split": "held_out_test_set",
+    "decision_threshold_score": 65.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "roc_auc": 1.0,
+    "pr_auc": 1.0,
+    "brier_score_raw": 0.0001,
+    "brier_score_calibrated": 0.0,
+    "false_positive_rate": 0.0,
+    "false_negative_rate": 0.0,
+    "confusion_matrix": {
+      "true_negatives": 2817,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "true_positives": 179
+    },
+    "class_distribution": {
+      "train": {
+        "total": 13999,
+        "positive_mules": 844,
+        "negative_legit": 13155
+      },
+      "validation": {
+        "total": 3005,
+        "positive_mules": 177,
+        "negative_legit": 2828
+      },
+      "test": {
+        "total": 2996,
+        "positive_mules": 179,
+        "negative_legit": 2817
+      }
+    },
+    "threshold_performance": [
+      {
+        "threshold_score": 35.0,
+        "precision": 0.9944,
+        "recall": 1.0,
+        "f1_score": 0.9972,
+        "false_positive_rate": 0.0004,
+        "false_negative_rate": 0.0,
+        "flagged_count": 180,
+        "true_positives": 179,
+        "false_positives": 1,
+        "true_negatives": 2816,
+        "false_negatives": 0
+      },
+      {
+        "threshold_score": 50.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1_score": 1.0,
+        "false_positive_rate": 0.0,
+        "false_negative_rate": 0.0,
+        "flagged_count": 179,
+        "true_positives": 179,
+        "false_positives": 0,
+        "true_negatives": 2817,
+        "false_negatives": 0
+      },
+      {
+        "threshold_score": 65.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1_score": 1.0,
+        "false_positive_rate": 0.0,
+        "false_negative_rate": 0.0,
+        "flagged_count": 179,
+        "true_positives": 179,
+        "false_positives": 0,
+        "true_negatives": 2817,
+        "false_negatives": 0
+      },
+      {
+        "threshold_score": 75.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1_score": 1.0,
+        "false_positive_rate": 0.0,
+        "false_negative_rate": 0.0,
+        "flagged_count": 179,
+        "true_positives": 179,
+        "false_positives": 0,
+        "true_negatives": 2817,
+        "false_negatives": 0
+      },
+      {
+        "threshold_score": 85.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1_score": 1.0,
+        "false_positive_rate": 0.0,
+        "false_negative_rate": 0.0,
+        "flagged_count": 179,
+        "true_positives": 179,
+        "false_positives": 0,
+        "true_negatives": 2817,
+        "false_negatives": 0
+      }
+    ],
+    "validation_threshold_performance": [
+      {
+        "threshold_score": 35.0,
+        "precision": 0.9888,
+        "recall": 1.0,
+        "f1_score": 0.9944,
+        "false_positive_rate": 0.0007,
+        "false_negative_rate": 0.0,
+        "flagged_count": 179,
+        "true_positives": 177,
+        "false_positives": 2,
+        "true_negatives": 2826,
+        "false_negatives": 0
+      },
+      {
+        "threshold_score": 50.0,
+        "precision": 0.9888,
+        "recall": 1.0,
+        "f1_score": 0.9944,
+        "false_positive_rate": 0.0007,
+        "false_negative_rate": 0.0,
+        "flagged_count": 179,
+        "true_positives": 177,
+        "false_positives": 2,
+        "true_negatives": 2826,
+        "false_negatives": 0
+      },
+      {
+        "threshold_score": 65.0,
+        "precision": 0.9944,
+        "recall": 1.0,
+        "f1_score": 0.9972,
+        "false_positive_rate": 0.0004,
+        "false_negative_rate": 0.0,
+        "flagged_count": 178,
+        "true_positives": 177,
+        "false_positives": 1,
+        "true_negatives": 2827,
+        "false_negatives": 0
+      },
+      {
+        "threshold_score": 75.0,
+        "precision": 0.9944,
+        "recall": 1.0,
+        "f1_score": 0.9972,
+        "false_positive_rate": 0.0004,
+        "false_negative_rate": 0.0,
+        "flagged_count": 178,
+        "true_positives": 177,
+        "false_positives": 1,
+        "true_negatives": 2827,
+        "false_negatives": 0
+      },
+      {
+        "threshold_score": 85.0,
+        "precision": 1.0,
+        "recall": 0.9944,
+        "f1_score": 0.9972,
+        "false_positive_rate": 0.0,
+        "false_negative_rate": 0.0056,
+        "flagged_count": 176,
+        "true_positives": 176,
+        "false_positives": 0,
+        "true_negatives": 2828,
+        "false_negatives": 1
+      }
+    ],
+    "false_positives_by_archetype": {},
+    "false_negatives_by_archetype": {},
+    "synthetic_disclaimer": "Evaluated on held-out synthetic test accounts. Synthetic performance does not guarantee real-world banking accuracy."
+  },
+  "training_config": {
+    "algorithm": "XGBClassifier + IsotonicRegression Calibration",
+    "n_estimators": 160,
+    "max_depth": 5,
+    "learning_rate": 0.07,
+    "scale_pos_weight": 3.948,
+    "random_seed": 42,
+    "split_strategy": "Scenario-Group-Aware Stratified Split (70% Train / 15% Val / 15% Test)"
+  },
+  "feature_importance": [
+    {
+      "feature": "median_holding_time_hours",
+      "display_name": "Approx. Holding Time (Hours)",
+      "importance": 0.4973,
+      "description": "Estimated median elapsed hours between receiving funds and sending onward transfers."
+    },
+    {
+      "feature": "high_risk_channel_ratio",
+      "display_name": "High-Velocity Channel Share",
+      "importance": 0.2056,
+      "description": "Proportion of transfers using instant P2P, crypto ramps, or cross-border wires."
+    },
+    {
+      "feature": "rapid_passthrough_ratio",
+      "display_name": "Rapid Forwarding Ratio (<3h)",
+      "importance": 0.0971,
+      "description": "Proportion of outgoing transfers executed within 3 hours of a preceding incoming transfer."
+    },
+    {
+      "feature": "avg_incoming_amount",
+      "display_name": "Average Incoming Amount",
+      "importance": 0.0435,
+      "description": "Mean monetary value per incoming transfer."
+    },
+    {
+      "feature": "unique_counterparties",
+      "display_name": "Distinct Counterparties",
+      "importance": 0.0431,
+      "description": "Total distinct sender and receiver accounts interacting with this account."
+    },
+    {
+      "feature": "avg_outgoing_amount",
+      "display_name": "Average Outgoing Amount",
+      "importance": 0.0226,
+      "description": "Mean monetary value per outgoing transfer."
+    },
+    {
+      "feature": "outgoing_tx_count",
+      "display_name": "Outgoing Transaction Count",
+      "importance": 0.0152,
+      "description": "Total number of historical outgoing transfers sent up to the analysis cutoff."
+    },
+    {
+      "feature": "out_degree",
+      "display_name": "Network Out-Degree (Onward Destinations)",
+      "importance": 0.0114,
+      "description": "Number of distinct destination accounts receiving funds from this account."
+    },
+    {
+      "feature": "cycle_participation_score",
+      "display_name": "Circular Flow / Reciprocity Score",
+      "importance": 0.0109,
+      "description": "Indicator of participation in 2-hop bidirectional or short directed cycles (up to length 5)."
+    },
+    {
+      "feature": "out_in_volume_ratio",
+      "display_name": "Outgoing-to-Incoming Value Ratio",
+      "importance": 0.0106,
+      "description": "Ratio of total outgoing volume to total incoming volume."
+    },
+    {
+      "feature": "tx_amount_cv",
+      "display_name": "Transaction Amount Variability (CV)",
+      "importance": 0.0067,
+      "description": "Coefficient of variation (std / mean) measuring uniformity vs dispersion of transfer sizes."
+    },
+    {
+      "feature": "in_degree",
+      "display_name": "Network In-Degree (Unique Senders)",
+      "importance": 0.0066,
+      "description": "Number of distinct accounts sending funds directly to this account."
+    },
+    {
+      "feature": "in_out_count_ratio",
+      "display_name": "Incoming-to-Outgoing Count Ratio",
+      "importance": 0.0063,
+      "description": "Ratio of incoming transaction count to outgoing transaction count."
+    },
+    {
+      "feature": "pagerank_score",
+      "display_name": "Network PageRank Centrality (x1000)",
+      "importance": 0.0044,
+      "description": "Volume-weighted directed PageRank centrality scaled by 1,000."
+    },
+    {
+      "feature": "incoming_tx_count",
+      "display_name": "Incoming Transaction Count",
+      "importance": 0.0039,
+      "description": "Total number of historical incoming transfers received up to the analysis cutoff."
+    },
+    {
+      "feature": "recent_vs_baseline_volume_ratio",
+      "display_name": "Recent vs Historical Baseline Ratio",
+      "importance": 0.0037,
+      "description": "Ratio of recent 14-day daily volume rate to prior historical daily volume rate."
+    },
+    {
+      "feature": "turnover_to_declared_ratio",
+      "display_name": "Observed vs Declared Monthly Turnover",
+      "importance": 0.0023,
+      "description": "Ratio of observed monthly transaction turnover to KYC declared monthly turnover."
+    },
+    {
+      "feature": "dormancy_gap_days",
+      "display_name": "Max Inactivity Gap (Days)",
+      "importance": 0.0022,
+      "description": "Longest period of inactivity before renewed transaction activity."
+    },
+    {
+      "feature": "passthrough_symmetry_score",
+      "display_name": "Pass-Through Volume Symmetry",
+      "importance": 0.0018,
+      "description": "Closeness of incoming and outgoing volume to 1:1 parity (1 - |in - out| / max(in, out))."
+    },
+    {
+      "feature": "tx_amount_std",
+      "display_name": "Transaction Amount Std Dev",
+      "importance": 0.0014,
+      "description": "Standard deviation of transaction amounts across all account activity."
+    },
+    {
+      "feature": "dormancy_burst_indicator",
+      "display_name": "Dormancy-to-Burst Score",
+      "importance": 0.0011,
+      "description": "Composite indicator of prolonged dormancy followed by high-velocity recent turnover."
+    },
+    {
+      "feature": "account_age_days",
+      "display_name": "Account Age (Days)",
+      "importance": 0.0009,
+      "description": "Age of the account in days at the analysis cutoff timestamp."
+    },
+    {
+      "feature": "outgoing_volume",
+      "display_name": "Outgoing Volume (USD)",
+      "importance": 0.0007,
+      "description": "Aggregate monetary value of outgoing transfers before the cutoff timestamp."
+    },
+    {
+      "feature": "incoming_volume",
+      "display_name": "Incoming Volume (USD)",
+      "importance": 0.0004,
+      "description": "Aggregate monetary value of incoming transfers before the cutoff timestamp."
+    },
+    {
+      "feature": "clustering_coefficient",
+      "display_name": "Local Clustering Coefficient",
+      "importance": 0.0003,
+      "description": "Fraction of connected triangles among an account's immediate neighborhood."
+    },
+    {
+      "feature": "burst_ratio_7d_vs_90d",
+      "display_name": "7-Day Activity Burst Ratio",
+      "importance": 0.0001,
+      "description": "Share of 90-day transaction volume concentrated in the most recent 7 days."
+    }
+  ],
+  "risk_scoring_methodology": {
+    "title": "FlyGuard AI Multi-Stage Risk Scoring & Triage Layer",
+    "disclaimer": "A normalized risk score is an investigative triage signal on a 0-100 index, NOT a direct percentage probability of criminal guilt. A score of 80 does NOT mean an 80% probability of money laundering. All high-risk predictions require human investigator review and corroborating evidence.",
+    "stages": [
+      {
+        "stage": 1,
+        "field": "raw_probability",
+        "description": "Unadjusted logistic output probability from the XGBoost ensemble classifier."
+      },
+      {
+        "stage": 2,
+        "field": "calibrated_probability",
+        "description": "Empirical probability calibrated on the held-out validation split via isotonic regression."
+      },
+      {
+        "stage": 3,
+        "field": "normalized_risk_score",
+        "description": "Piecewise-linear monotonic mapping of calibrated probability onto a 0-100 operational triage scale: [0.00-0.15 -> 0-35], [0.15-0.45 -> 35-65], [0.45-0.78 -> 65-85], [0.78-1.00 -> 85-100]."
+      },
+      {
+        "stage": 4,
+        "field": "risk_category",
+        "description": "Configurable categorical band (Low, Moderate, High, Critical) applied to the normalized score."
+      },
+      {
+        "stage": 5,
+        "field": "alert_priority",
+        "description": "Operational queue priority (None, Low, Medium, High, Urgent) for AML triage workflows."
+      }
+    ]
+  },
+  "limitations": "1. Synthetic Data Disclaimer: This model was trained and evaluated on synthetic financial transaction patterns. High test metrics on synthetic data do NOT guarantee equivalent performance on real-world banking records.\n2. Decision Support Only: Risk scores and SHAP feature attributions are investigative leads, not proof of criminal conduct.\n3. Legitimate High-Velocity Overlap: Small businesses, payment collection aggregators, and shared household accounts can exhibit high counterparty fan-in or rapid turnover that mimics money-mule behavior.\n4. Observational Scope: Graph centrality and holding-time estimates reflect only transfers visible within the platform."
+}

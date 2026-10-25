@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+env/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node / Frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.tsbuildinfo
+
+# Local Environment & Databases
+.env
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Generated large datasets & runtime logs
+data/raw/*.csv
+data/processed/*.parquet
+*.log
+.DS_Store
+

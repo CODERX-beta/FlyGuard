@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: flyguard-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=development
+      - DATABASE_URL=sqlite:///./data/flyguard.db
+      - CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+      - ALLOW_DB_RESET=true
+    volumes:
+      - ./data:/app/data
+      - ./artifacts:/app/artifacts
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: flyguard-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+    depends_on:
+      - backend
+
